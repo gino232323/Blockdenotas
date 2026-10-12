@@ -1,0 +1,925 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Libreta</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Caveat:wght@500;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Lora:wght@400;500&family=Special+Elite&display=swap">
+<style>
+/* Layout: lista de notas a la izquierda, hoja de papel con barra de estilo a la derecha; en celular una sola columna a la vez */
+:root {
+  --bg: #e8ebf3;
+  --panel: #f5f6fa;
+  --field: #ffffff;
+  --fg: #1b2030;
+  --muted: #5a6377;
+  --line: #d0d6e3;
+  --sel: #e0e5f5;
+  --accent: #3a4ccf;
+  --accent-fg: #ffffff;
+  --danger: #b3261e;
+  --paper-papel: #ffffff;
+  --paper-limon: #fff4b0;
+  --paper-menta: #d2f2de;
+  --paper-cielo: #d1e6fb;
+  --paper-rosa: #fad7e3;
+  --paper-lavanda: #e2dbfa;
+  --ink: #1b2030;
+  --ink-soft: #4b5368;
+  --font-ui: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-brand: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f121b;
+    --panel: #171b27;
+    --field: #0f121b;
+    --fg: #e6e9f2;
+    --muted: #9ba4ba;
+    --line: #2a3043;
+    --sel: #232a42;
+    --accent: #8e9cff;
+    --accent-fg: #0e1230;
+    --danger: #ff8f86;
+    --paper-papel: #1d2231;
+    --paper-limon: #3b3819;
+    --paper-menta: #1d3a2d;
+    --paper-cielo: #1c3450;
+    --paper-rosa: #44212f;
+    --paper-lavanda: #302b50;
+    --ink: #eaedf6;
+    --ink-soft: #b5bdd1;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f121b;
+  --panel: #171b27;
+  --field: #0f121b;
+  --fg: #e6e9f2;
+  --muted: #9ba4ba;
+  --line: #2a3043;
+  --sel: #232a42;
+  --accent: #8e9cff;
+  --accent-fg: #0e1230;
+  --danger: #ff8f86;
+  --paper-papel: #1d2231;
+  --paper-limon: #3b3819;
+  --paper-menta: #1d3a2d;
+  --paper-cielo: #1c3450;
+  --paper-rosa: #44212f;
+  --paper-lavanda: #302b50;
+  --ink: #eaedf6;
+  --ink-soft: #b5bdd1;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.4;
+}
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+}
+
+/* ---------- Lista ---------- */
+.side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+.side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px 10px;
+}
+.brand {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.count { margin-top: 2px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.search { padding: 6px 16px 10px; }
+.search input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--field);
+}
+.search input::placeholder { color: var(--muted); }
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 8px 12px;
+  list-style: none;
+  overflow-y: auto;
+}
+.note-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.note-item:hover { background: color-mix(in srgb, var(--sel) 60%, transparent); }
+.note-item[aria-current="true"] { background: var(--sel); }
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--fg) 28%, transparent);
+}
+.ni-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ni-title.untitled { font-weight: 500; font-style: italic; color: var(--muted); }
+.ni-date { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ni-snip {
+  grid-column: 2 / 4;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hint { padding: 14px 10px; color: var(--muted); font-size: 14px; }
+.foot { margin: 0; padding: 10px 16px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--field);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: color-mix(in srgb, var(--fg) 35%, var(--line)); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.danger { color: var(--danger); }
+.btn.danger.solid { background: var(--danger); border-color: var(--danger); color: var(--accent-fg); }
+.btn.small { padding: 6px 10px; }
+
+/* ---------- Editor ---------- */
+.editor { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pane { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.back { display: none; align-items: center; gap: 4px; padding: 6px 10px 6px 6px; }
+.group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lbl { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.sw {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+  cursor: pointer;
+}
+.sw[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.fb {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.fb[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.sz { width: 34px; padding: 4px 0; font-weight: 600; }
+.sz:disabled { opacity: 0.4; cursor: default; }
+.spacer { flex: 1 1 0; min-width: 0; }
+.status { color: var(--muted); font-size: 13px; }
+.status[data-state="error"] { color: var(--danger); font-weight: 600; }
+.del-area { display: flex; align-items: center; gap: 8px; }
+.del-q { font-size: 13px; color: var(--danger); font-weight: 600; }
+
+.sheetwrap { flex: 1; min-height: 0; display: flex; padding: 16px; }
+.sheet {
+  --paper: var(--paper-papel);
+  --note-font: var(--font-ui);
+  --fs: 16px;
+  --title-w: 600;
+  --lh: calc(var(--fs) * 1.75);
+  --rule: color-mix(in srgb, var(--ink) 12%, transparent);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 24px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+.sheet[data-paper="limon"] { --paper: var(--paper-limon); }
+.sheet[data-paper="menta"] { --paper: var(--paper-menta); }
+.sheet[data-paper="cielo"] { --paper: var(--paper-cielo); }
+.sheet[data-paper="rosa"] { --paper: var(--paper-rosa); }
+.sheet[data-paper="lavanda"] { --paper: var(--paper-lavanda); }
+.title-in {
+  width: 100%;
+  padding: 0 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--note-font);
+  font-size: calc(var(--fs) * 1.6);
+  font-weight: var(--title-w);
+  line-height: 1.2;
+  outline: none;
+}
+.body-in {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--lh) - 1px), var(--rule) calc(var(--lh) - 1px), var(--rule) var(--lh));
+  background-attachment: local;
+  color: var(--ink);
+  font-family: var(--note-font);
+  font-size: var(--fs);
+  line-height: var(--lh);
+  resize: none;
+  outline: none;
+}
+.title-in::placeholder, .body-in::placeholder { color: var(--ink-soft); opacity: 0.6; }
+.sheet:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding-top: 10px;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px 24px;
+  text-align: center;
+}
+.empty h2 { margin: 0; font-family: var(--font-brand); font-size: 24px; letter-spacing: -0.02em; text-wrap: balance; }
+.empty p { margin: 0; max-width: 34ch; color: var(--muted); }
+
+@media (max-width: 759px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .app[data-view="list"] .editor { display: none; }
+  .app[data-view="edit"] .side { display: none; }
+  .back { display: inline-flex; }
+  .sheetwrap { padding: 12px 16px 16px; }
+  .sheet { padding: 14px 16px 10px; }
+  .spacer { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="app" id="app" data-view="list">
+  <aside class="side" aria-label="Lista de notas">
+    <div class="side-head">
+      <div>
+        <h1 class="brand">Libreta</h1>
+        <div class="count" id="count"></div>
+      </div>
+      <button class="btn primary" id="newBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5v11M1.5 7h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        Nueva
+      </button>
+    </div>
+    <div class="search">
+      <label class="sr" for="q">Buscar en tus notas</label>
+      <input id="q" type="search" placeholder="Buscar en tus notas" autocomplete="off">
+    </div>
+    <ul class="list" id="list"></ul>
+    <p class="foot" id="storeNote"></p>
+  </aside>
+
+  <main class="editor" id="editor">
+    <div class="empty" id="empty" hidden>
+      <h2>Tu libreta está vacía</h2>
+      <p>Crea una nota, ponle título y elige el color y la letra que más te gusten.</p>
+      <button class="btn primary" id="newBtn2" type="button">Crear la primera nota</button>
+    </div>
+
+    <div class="pane" id="pane" hidden>
+      <div class="toolbar">
+        <button class="btn small back" id="backBtn" type="button" aria-label="Volver a la lista de notas">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          Notas
+        </button>
+        <div class="group" role="group" aria-label="Color del papel">
+          <span class="lbl">Papel</span>
+          <div class="seg" id="paperBtns"></div>
+        </div>
+        <div class="group" role="group" aria-label="Tipografía">
+          <span class="lbl">Letra</span>
+          <div class="seg" id="fontBtns"></div>
+        </div>
+        <div class="group" role="group" aria-label="Tamaño de letra">
+          <span class="lbl">Tamaño</span>
+          <div class="seg">
+            <button class="fb sz" id="szDown" type="button" aria-label="Letra más pequeña">A−</button>
+            <button class="fb sz" id="szUp" type="button" aria-label="Letra más grande">A+</button>
+          </div>
+        </div>
+        <span class="spacer"></span>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+        <button class="btn primary small" id="saveBtn" type="button">Guardar</button>
+        <span class="del-area" id="delArea"></span>
+      </div>
+
+      <div class="sheetwrap">
+        <div class="sheet" id="sheet" data-paper="papel">
+          <label class="sr" for="titleIn">Título de la nota</label>
+          <input class="title-in" id="titleIn" type="text" maxlength="120" placeholder="Título de la nota" autocomplete="off">
+          <label class="sr" for="bodyIn">Contenido de la nota</label>
+          <textarea class="body-in" id="bodyIn" maxlength="60000" placeholder="Escribe aquí…" spellcheck="true"></textarea>
+          <div class="meta"><span id="metaWords"></span><span id="metaDate"></span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var FONTS = [
+    { id: 'sans', name: 'Sans', css: "'Figtree', system-ui, sans-serif", scale: 1, tw: 600 },
+    { id: 'serif', name: 'Serif', css: "'Lora', Georgia, serif", scale: 1.02, tw: 500 },
+    { id: 'mono', name: 'Mono', css: "'IBM Plex Mono', ui-monospace, Menlo, monospace", scale: 0.9, tw: 500 },
+    { id: 'hand', name: 'Manuscrita', css: "'Caveat', 'Segoe Script', cursive", scale: 1.3, tw: 700 },
+    { id: 'type', name: 'Máquina', css: "'Special Elite', 'Courier New', monospace", scale: 0.92, tw: 400 }
+  ];
+  var PAPERS = [
+    { id: 'papel', name: 'Papel' },
+    { id: 'limon', name: 'Limón' },
+    { id: 'menta', name: 'Menta' },
+    { id: 'cielo', name: 'Cielo' },
+    { id: 'rosa', name: 'Rosa' },
+    { id: 'lavanda', name: 'Lavanda' }
+  ];
+  var SIZES = [14, 16, 18, 21, 25];
+
+  var notes = new Map();
+  var dirty = new Set();
+  var deleting = new Set();
+  var timers = new Map();
+  var chains = new Map();
+  var store = null;
+  var ready = false;
+  var activeId = null;
+  var query = '';
+  var saving = 0;
+  var failed = false;
+  var confirming = false;
+  var confirmTimer = 0;
+
+  function $(id) { return document.getElementById(id); }
+  var app = $('app'), listEl = $('list'), countEl = $('count'), qIn = $('q');
+  var emptyEl = $('empty'), paneEl = $('pane'), sheet = $('sheet');
+  var titleIn = $('titleIn'), bodyIn = $('bodyIn');
+  var statusEl = $('status'), delArea = $('delArea');
+  var szDown = $('szDown'), szUp = $('szUp');
+
+  /* ---------- utilidades ---------- */
+  function newId() { return 'n_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function str(v, max) { return typeof v === 'string' ? v.slice(0, max || 100000) : ''; }
+  function fontOf(id) { for (var i = 0; i < FONTS.length; i++) if (FONTS[i].id === id) return FONTS[i]; return FONTS[0]; }
+  function paperOk(id) { for (var i = 0; i < PAPERS.length; i++) if (PAPERS[i].id === id) return id; return 'papel'; }
+  function sizeOk(v) { v = Number(v); return v >= 0 && v < SIZES.length && v === Math.floor(v) ? v : 1; }
+  function normalize(id, d) {
+    d = d || {};
+    var now = Date.now();
+    return {
+      id: id,
+      title: str(d.title, 120),
+      body: str(d.body, 60000),
+      paper: paperOk(d.paper),
+      font: fontOf(d.font).id,
+      size: sizeOk(d.size),
+      created: Number(d.created) || now,
+      updated: Number(d.updated) || now
+    };
+  }
+  function clone(n) { return { id: n.id, title: n.title, body: n.body, paper: n.paper, font: n.font, size: n.size, created: n.created, updated: n.updated }; }
+  function fmtShort(ts) {
+    var d = new Date(ts), now = new Date();
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  }
+  function fmtLong(ts) { return new Date(ts).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }); }
+  function countWords(s) { s = s.trim(); return s ? s.split(/\s+/).length : 0; }
+  function sorted() { return Array.from(notes.values()).sort(function (a, b) { return b.updated - a.updated; }); }
+  function isBlank(n) { return !n.title.trim() && !n.body.trim(); }
+
+  /* ---------- almacenamiento ---------- */
+  function localStore() {
+    var KEY = 'libreta:v1';
+    function read() {
+      try {
+        var r = JSON.parse(localStorage.getItem(KEY) || 'null');
+        if (r && Array.isArray(r.notes)) return r;
+      } catch (e) {}
+      return { notes: [], seeded: false };
+    }
+    var mem = read();
+    function write() {
+      try { localStorage.setItem(KEY, JSON.stringify(mem)); }
+      catch (e) { throw new Error('local-blocked'); }
+    }
+    return {
+      mode: 'local',
+      load: function () {
+        mem = read();
+        return Promise.resolve({ notes: mem.notes.map(function (n) { return normalize(n.id, n); }), seeded: !!mem.seeded });
+      },
+      save: function (n) {
+        var i = mem.notes.findIndex(function (x) { return x.id === n.id; });
+        if (i < 0) mem.notes.push(n); else mem.notes[i] = n;
+        write();
+        return Promise.resolve();
+      },
+      remove: function (id) {
+        mem.notes = mem.notes.filter(function (x) { return x.id !== id; });
+        write();
+        return Promise.resolve();
+      },
+      markSeeded: function () { mem.seeded = true; write(); return Promise.resolve(); },
+      subscribe: function () {}
+    };
+  }
+
+  function dbStore(db, uid) {
+    var col = db.collection('data/users/' + uid);
+    function parse(snap) {
+      var out = [], seeded = false;
+      snap.docs.forEach(function (s) {
+        var d = s.data() || {};
+        if (s.id === 'prefs') { seeded = !!d.seeded; return; }
+        if (s.id.indexOf('n_') === 0) out.push(normalize(s.id, d));
+      });
+      return { notes: out, seeded: seeded };
+    }
+    return {
+      mode: 'db',
+      load: function () { return col.limit(1000).get().then(parse); },
+      save: function (n) {
+        return col.doc(n.id).set({ title: n.title, body: n.body, paper: n.paper, font: n.font, size: n.size, created: n.created, updated: n.updated });
+      },
+      remove: function (id) { return col.doc(id).delete(); },
+      markSeeded: function () { return col.doc('prefs').set({ seeded: true }); },
+      subscribe: function (cb, onErr) {
+        return col.limit(1000).onSnapshot(function (snap) { cb(parse(snap).notes); }, onErr);
+      }
+    };
+  }
+
+  async function pickStore() {
+    var c = window.claude;
+    if (c && typeof c.use === 'function') {
+      try {
+        var res = await Promise.race([
+          Promise.all([c.use('db'), c.use('user')]),
+          new Promise(function (r) { setTimeout(function () { r(null); }, 5000); })
+        ]);
+        if (res && res[0] && res[1]) {
+          var uid = await res[1].id();
+          if (uid) return dbStore(res[0], uid);
+        }
+      } catch (e) {}
+    }
+    return localStore();
+  }
+
+  /* ---------- guardado ---------- */
+  function updateStatus() {
+    var s = failed ? 'error' : saving > 0 ? 'saving' : dirty.size > 0 ? 'pending' : 'saved';
+    statusEl.dataset.state = s;
+    statusEl.textContent = { saved: 'Guardado', saving: 'Guardando…', pending: 'Cambios sin guardar', error: 'No se pudo guardar' }[s];
+    statusEl.title = s === 'error'
+      ? (store && store.mode === 'local' ? 'Este navegador no permite guardar notas.' : 'Revisa tu conexión y vuelve a pulsar Guardar.')
+      : '';
+  }
+
+  function schedule(id) {
+    clearTimeout(timers.get(id));
+    timers.set(id, setTimeout(function () { flush(id); }, 700));
+  }
+
+  function flush(id) {
+    clearTimeout(timers.get(id));
+    timers.delete(id);
+    if (!dirty.has(id) || !store) return Promise.resolve();
+    var prev = chains.get(id) || Promise.resolve();
+    var p = prev.then(async function () {
+      var n = notes.get(id);
+      if (!n || !dirty.has(id)) return;
+      var stamp = n.updated;
+      saving++;
+      updateStatus();
+      try {
+        await store.save(clone(n));
+        var cur = notes.get(id);
+        if (cur && cur.updated === stamp) dirty.delete(id);
+      } catch (e) {
+        failed = true;
+      } finally {
+        saving--;
+        updateStatus();
+      }
+    });
+    chains.set(id, p);
+    return p;
+  }
+
+  function flushAll() {
+    return Promise.all(Array.from(dirty).map(flush));
+  }
+
+  function touch(n) {
+    n.updated = Date.now();
+    dirty.add(n.id);
+    failed = false;
+    schedule(n.id);
+    updateStatus();
+    renderList();
+    updateMeta(n);
+  }
+
+  /* ---------- interfaz ---------- */
+  function setView(v) { app.dataset.view = v; }
+
+  function hint(text) {
+    var li = document.createElement('li');
+    li.className = 'hint';
+    li.textContent = text;
+    listEl.appendChild(li);
+  }
+
+  function renderList() {
+    var all = sorted();
+    countEl.textContent = ready ? (all.length === 1 ? '1 nota' : all.length + ' notas') : '';
+    listEl.textContent = '';
+    if (!ready) { hint('Cargando tus notas…'); return; }
+    var q = query.trim().toLowerCase();
+    var items = q ? all.filter(function (n) { return (n.title + ' ' + n.body).toLowerCase().indexOf(q) !== -1; }) : all;
+    if (!items.length) {
+      hint(all.length ? 'Ninguna nota coincide con tu búsqueda.' : 'Todavía no hay notas. Crea la primera con “Nueva”.');
+      return;
+    }
+    items.forEach(function (n) {
+      var li = document.createElement('li');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'note-item';
+      if (n.id === activeId) b.setAttribute('aria-current', 'true');
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = 'var(--paper-' + n.paper + ')';
+      var t = document.createElement('span');
+      var hasTitle = !!n.title.trim();
+      t.className = 'ni-title' + (hasTitle ? '' : ' untitled');
+      t.textContent = hasTitle ? n.title.trim() : 'Sin título';
+      var d = document.createElement('span');
+      d.className = 'ni-date';
+      d.textContent = fmtShort(n.updated);
+      var s = document.createElement('span');
+      s.className = 'ni-snip';
+      var first = n.body.split('\n').map(function (x) { return x.trim(); }).filter(Boolean)[0] || '';
+      s.textContent = first ? first.slice(0, 90) : 'Nota vacía';
+      b.appendChild(dot); b.appendChild(t); b.appendChild(d); b.appendChild(s);
+      b.addEventListener('click', function () { select(n.id, true); });
+      li.appendChild(b);
+      listEl.appendChild(li);
+    });
+  }
+
+  function updateMeta(n) {
+    var w = countWords(n.body);
+    $('metaWords').textContent = w + (w === 1 ? ' palabra' : ' palabras');
+    $('metaDate').textContent = 'Editada ' + fmtLong(n.updated);
+  }
+
+  function applyLook(n) {
+    var f = fontOf(n.font);
+    sheet.dataset.paper = n.paper;
+    sheet.style.setProperty('--note-font', f.css);
+    sheet.style.setProperty('--fs', (SIZES[n.size] * f.scale).toFixed(1) + 'px');
+    sheet.style.setProperty('--title-w', String(f.tw));
+    Array.prototype.forEach.call($('paperBtns').children, function (b) {
+      b.setAttribute('aria-pressed', b.dataset.id === n.paper ? 'true' : 'false');
+    });
+    Array.prototype.forEach.call($('fontBtns').children, function (b) {
+      b.setAttribute('aria-pressed', b.dataset.id === n.font ? 'true' : 'false');
+    });
+    szDown.disabled = n.size <= 0;
+    szUp.disabled = n.size >= SIZES.length - 1;
+  }
+
+  function renderDelete() {
+    delArea.textContent = '';
+    if (!confirming) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn small danger';
+      b.textContent = 'Eliminar';
+      b.addEventListener('click', function () {
+        confirming = true;
+        renderDelete();
+        clearTimeout(confirmTimer);
+        confirmTimer = setTimeout(function () { confirming = false; renderDelete(); }, 6000);
+      });
+      delArea.appendChild(b);
+      return;
+    }
+    var q = document.createElement('span');
+    q.className = 'del-q';
+    q.textContent = '¿Eliminar esta nota?';
+    var yes = document.createElement('button');
+    yes.type = 'button';
+    yes.className = 'btn small danger solid';
+    yes.textContent = 'Sí, eliminar';
+    yes.addEventListener('click', doDelete);
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.className = 'btn small';
+    no.textContent = 'Cancelar';
+    no.addEventListener('click', function () { clearTimeout(confirmTimer); confirming = false; renderDelete(); });
+    delArea.appendChild(q); delArea.appendChild(yes); delArea.appendChild(no);
+  }
+
+  function renderEditor() {
+    var n = notes.get(activeId);
+    emptyEl.hidden = !!n || !ready;
+    paneEl.hidden = !n;
+    if (!n) return;
+    if (titleIn.value !== n.title) titleIn.value = n.title;
+    if (bodyIn.value !== n.body) bodyIn.value = n.body;
+    applyLook(n);
+    updateMeta(n);
+    renderDelete();
+  }
+
+  function discardIfBlank(id) {
+    var n = notes.get(id);
+    if (!n || !isBlank(n)) return;
+    notes.delete(id);
+    dirty.delete(id);
+    clearTimeout(timers.get(id));
+    timers.delete(id);
+    deleting.add(id);
+    var done = function () { deleting.delete(id); };
+    try { Promise.resolve(store.remove(id)).then(done, done); } catch (e) { done(); }
+  }
+
+  function select(id, goEdit) {
+    if (activeId && activeId !== id) discardIfBlank(activeId);
+    activeId = id;
+    confirming = false;
+    clearTimeout(confirmTimer);
+    renderList();
+    renderEditor();
+    if (goEdit) setView('edit');
+  }
+
+  function createNote() {
+    if (!store) return;
+    if (activeId) discardIfBlank(activeId);
+    var now = Date.now();
+    var n = { id: newId(), title: '', body: '', paper: 'papel', font: 'sans', size: 1, created: now, updated: now };
+    notes.set(n.id, n);
+    dirty.add(n.id);
+    schedule(n.id);
+    activeId = n.id;
+    confirming = false;
+    qIn.value = '';
+    query = '';
+    renderList();
+    renderEditor();
+    updateStatus();
+    setView('edit');
+    titleIn.focus();
+  }
+
+  async function doDelete() {
+    var id = activeId;
+    if (!id) return;
+    clearTimeout(confirmTimer);
+    confirming = false;
+    notes.delete(id);
+    dirty.delete(id);
+    clearTimeout(timers.get(id));
+    timers.delete(id);
+    deleting.add(id);
+    var next = sorted()[0];
+    activeId = next ? next.id : null;
+    renderList();
+    renderEditor();
+    setView('list');
+    updateStatus();
+    try { await store.remove(id); } catch (e) { failed = true; updateStatus(); }
+    deleting.delete(id);
+  }
+
+  function onRemote(list) {
+    var seen = new Set();
+    var changedActive = false;
+    list.forEach(function (n) {
+      seen.add(n.id);
+      if (dirty.has(n.id) || deleting.has(n.id)) return;
+      var cur = notes.get(n.id);
+      if (!cur || cur.updated !== n.updated) {
+        notes.set(n.id, n);
+        if (n.id === activeId) changedActive = true;
+      }
+    });
+    Array.from(notes.keys()).forEach(function (id) {
+      if (!seen.has(id) && !dirty.has(id) && !deleting.has(id)) {
+        notes.delete(id);
+        if (id === activeId) { activeId = null; changedActive = true; }
+      }
+    });
+    if (!activeId) {
+      var s = sorted();
+      if (s.length) { activeId = s[0].id; }
+      changedActive = true;
+    }
+    renderList();
+    if (changedActive) renderEditor();
+  }
+
+  /* ---------- controles ---------- */
+  function buildControls() {
+    var pb = $('paperBtns');
+    PAPERS.forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sw';
+      b.dataset.id = p.id;
+      b.style.background = 'var(--paper-' + p.id + ')';
+      b.setAttribute('aria-label', 'Papel ' + p.name.toLowerCase());
+      b.title = p.name;
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () {
+        var n = notes.get(activeId);
+        if (!n || n.paper === p.id) return;
+        n.paper = p.id;
+        applyLook(n);
+        touch(n);
+      });
+      pb.appendChild(b);
+    });
+    var fbx = $('fontBtns');
+    FONTS.forEach(function (f) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fb';
+      b.dataset.id = f.id;
+      b.textContent = f.name;
+      b.style.fontFamily = f.css;
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () {
+        var n = notes.get(activeId);
+        if (!n || n.font === f.id) return;
+        n.font = f.id;
+        applyLook(n);
+        touch(n);
+      });
+      fbx.appendChild(b);
+    });
+    function bump(step) {
+      var n = notes.get(activeId);
+      if (!n) return;
+      var v = Math.max(0, Math.min(SIZES.length - 1, n.size + step));
+      if (v === n.size) return;
+      n.size = v;
+      applyLook(n);
+      touch(n);
+    }
+    szDown.addEventListener('click', function () { bump(-1); });
+    szUp.addEventListener('click', function () { bump(1); });
+  }
+
+  function bind() {
+    $('newBtn').addEventListener('click', createNote);
+    $('newBtn2').addEventListener('click', createNote);
+    $('backBtn').addEventListener('click', function () { flushAll(); setView('list'); });
+    $('saveBtn').addEventListener('click', function () { failed = false; updateStatus(); flushAll(); });
+    qIn.addEventListener('input', function () { query = qIn.value; renderList(); });
+    titleIn.addEventListener('input', function () {
+      var n = notes.get(activeId);
+      if (!n) return;
+      n.title = titleIn.value;
+      touch(n);
+    });
+    bodyIn.addEventListener('input', function () {
+      var n = notes.get(activeId);
+      if (!n) return;
+      n.body = bodyIn.value;
+      touch(n);
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        failed = false;
+        flushAll();
+      }
+    });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) flushAll(); });
+    window.addEventListener('pagehide', function () { flushAll(); });
+  }
+
+  /* ---------- arranque ---------- */
+  async function boot() {
+    buildControls();
+    bind();
+    renderList();
+    updateStatus();
+
+    store = await pickStore();
+    var data;
+    try {
+      data = await store.load();
+    } catch (e) {
+      store = localStore();
+      data = await store.load();
+    }
+    data.notes.forEach(function (n) { notes.set(n.id, n); });
+
+    if (!data.seeded && notes.size === 0) {
+      var now = Date.now();
+      var w = {
+        id: newId(),
+        title: 'Bienvenida a tu libreta',
+        body: 'Esta es tu primera nota. Puedes borrarla cuando quieras.\n\nCambia el título arriba y escribe aquí abajo. Todo se guarda solo mientras escribes.\n\nEn la barra de arriba eliges el color del papel, la tipografía y el tamaño de letra. Cada nota recuerda su propio estilo.\n\nCrea otra con el botón Nueva y vuelve a abrir cualquiera desde la lista de notas.',
+        paper: 'limon', font: 'hand', size: 1, created: now, updated: now
+      };
+      notes.set(w.id, w);
+      try { await store.save(clone(w)); await store.markSeeded(); }
+      catch (e) { dirty.add(w.id); failed = true; }
+    }
+
+    $('storeNote').textContent = store.mode === 'db'
+      ? 'Tus notas se guardan en tu cuenta y solo tú las ves.'
+      : 'Tus notas se guardan solo en este navegador.';
+
+    var first = sorted()[0];
+    activeId = first ? first.id : null;
+    ready = true;
+    renderList();
+    renderEditor();
+    updateStatus();
+    store.subscribe(onRemote, function () {});
+  }
+
+  boot();
+})();
+</script>
+
+</body></html>
